@@ -47,19 +47,52 @@
             overflow-y: auto;
         }
 
-        .menu-item {
+        .sidebar h2 {
+            padding: 20px;
+            font-size: 18px;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .menu-group > .menu-toggle {
             display: block;
             padding: 15px 20px;
-            color: white;
-            text-decoration: none;
             border-bottom: 1px solid #34495e;
-            transition: all 0.3s ease;
             cursor: pointer;
         }
 
-        .menu-item:hover {
+        .menu-group > .menu-toggle:hover {
             background: #3498db;
-            padding-left: 30px;
+        }
+
+        .submenu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: none;
+        }
+
+        .menu-group.open .submenu {
+            display: block;
+        }
+
+        .submenu .menu-item {
+            display: block;
+            padding: 12px 30px;
+            border-bottom: 1px solid #34495e;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .submenu .menu-item:hover {
+            background: #3498db;
+            padding-left: 40px;
         }
 
         .menu-item.active {
@@ -271,12 +304,23 @@
 
     <!-- 좌측 메뉴 -->
     <nav class="sidebar">
-        <a href="#" class="menu-item" data-jsp="a">
-            📄 메뉴 A (a.jsp)
-        </a>
-        <a href="#" class="menu-item" data-jsp="b">
-            📊 메뉴 B (b.jsp)
-        </a>
+        <h2>포털서비스관리</h2>
+        <ul class="menu">
+            <li class="menu-group">
+                <div class="menu-toggle">일반서비스</div>
+                <ul class="submenu">
+                    <li><a href="#" class="menu-item" data-src="faq.html">FAQ관리</a></li>
+                    <li><a href="#" class="menu-item" data-src="qna.html">QNA관리</a></li>
+                </ul>
+            </li>
+            <li class="menu-group">
+                <div class="menu-toggle">특수서비스</div>
+                <ul class="submenu">
+                    <li><a href="#" class="menu-item" data-src="sul.html">설문관리</a></li>
+                    <li><a href="#" class="menu-item" data-src="store.html">자료실</a></li>
+                </ul>
+            </li>
+        </ul>
     </nav>
 
     <!-- 우측 컨텐츠 -->
@@ -288,7 +332,7 @@
             <div class="empty-state">
                 <i>📁</i>
                 <p>좌측 메뉴에서 항목을 선택하세요</p>
-                <small style="margin-top: 10px; opacity: 0.7;">기존 JSP 파일을 수정하지 않고 그대로 사용할 수 있습니다</small>
+                <small style="margin-top: 10px; opacity: 0.7;">기존 파일을 수정하지 않고 그대로 사용할 수 있습니다</small>
             </div>
         </div>
     </main>
@@ -297,7 +341,7 @@
     <footer class="footer">
         <div>
             <span class="status-indicator"></span>
-            개발 서버 실행 중 - JSP 파일 독립 실행
+            개발 서버 실행 중 - 파일 독립 실행
         </div>
         <div>Eclipse 웹 개발 환경 v2.0</div>
     </footer>
@@ -313,13 +357,21 @@
             }
 
             init() {
+                // 1레벨 메뉴 토글
+                document.querySelectorAll('.menu-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', () => {
+                        toggle.parentElement.classList.toggle('open');
+                    });
+                });
+
                 // 메뉴 클릭 이벤트 리스너
                 document.querySelectorAll('.menu-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const jspName = item.getAttribute('data-jsp');
-                        this.openTab(jspName);
-                        
+                        const src = item.getAttribute('data-src');
+                        const title = item.textContent.trim();
+                        this.openTab(src, title);
+
                         // 메뉴 활성화 표시
                         document.querySelectorAll('.menu-item').forEach(menu => menu.classList.remove('active'));
                         item.classList.add('active');
@@ -327,8 +379,8 @@
                 });
             }
 
-            openTab(jspName) {
-                const tabId = `tab-${jspName}`;
+            openTab(src, title = src) {
+                const tabId = `tab-${src.replace(/[^a-zA-Z0-9_-]/g, '')}`;
                 
                 // 이미 열린 탭이면 활성화만
                 if (this.tabs.has(tabId)) {
@@ -337,11 +389,11 @@
                 }
 
                 // 새 탭 생성
-                this.createTab(tabId, jspName);
+                this.createTab(tabId, src, title);
                 this.activateTab(tabId);
             }
 
-            createTab(tabId, jspName) {
+            createTab(tabId, src, title) {
                 const tabHeader = document.getElementById('tabHeader');
                 const tabContent = document.getElementById('tabContent');
 
@@ -356,7 +408,7 @@
                 tabButton.className = 'tab-button';
                 tabButton.setAttribute('data-tab', tabId);
                 tabButton.innerHTML = `
-                    📄 ${jspName}.jsp
+                    📄 ${title}
                     <span class="tab-close" data-tab="${tabId}">×</span>
                 `;
 
@@ -371,15 +423,15 @@
                 loadingOverlay.innerHTML = `
                     <div>
                         <div class="loading-spinner"></div>
-                        <p style="margin-top: 15px; color: #666;">JSP 파일을 로드 중...</p>
+                        <p style="margin-top: 15px; color: #666;">파일을 로드 중...</p>
                     </div>
                 `;
 
                 // iframe 생성
                 const iframe = document.createElement('iframe');
                 iframe.className = 'jsp-iframe';
-                iframe.src = `${jspName}.jsp`;
-                iframe.setAttribute('data-jsp', jspName);
+                iframe.src = src;
+                iframe.setAttribute('data-src', src);
                 
                 // iframe 로드 이벤트 처리
                 iframe.onload = () => {
@@ -387,12 +439,12 @@
                     if (loadingOverlay.parentNode) {
                         loadingOverlay.remove();
                     }
-                    console.log(`${jspName}.jsp 로드 완료`);
+                    console.log(`${src} 로드 완료`);
                 };
 
                 iframe.onerror = () => {
                     // 에러 상태 표시
-                    this.showErrorState(tabPane, jspName);
+                    this.showErrorState(tabPane, src);
                 };
 
                 // 탭 구성
@@ -408,7 +460,8 @@
                     button: tabButton,
                     pane: tabPane,
                     iframe: iframe,
-                    jspName: jspName
+                    src: src,
+                    title: title
                 });
 
                 // 이벤트 리스너 등록
@@ -426,12 +479,12 @@
                 // 로딩 타임아웃 설정 (10초)
                 setTimeout(() => {
                     if (loadingOverlay.parentNode) {
-                        this.showErrorState(tabPane, jspName);
+                        this.showErrorState(tabPane, src);
                     }
                 }, 10000);
             }
 
-            showErrorState(tabPane, jspName) {
+            showErrorState(tabPane, src) {
                 // 기존 내용 제거
                 tabPane.innerHTML = '';
                 
@@ -440,14 +493,14 @@
                 errorState.className = 'error-state';
                 errorState.innerHTML = `
                     <i>⚠️</i>
-                    <h3>${jspName}.jsp 파일을 로드할 수 없습니다</h3>
+                    <h3>${src} 파일을 로드할 수 없습니다</h3>
                     <p>다음 사항을 확인해주세요:</p>
                     <ul style="text-align: left; margin: 15px 0;">
-                        <li>JSP 파일이 올바른 경로에 있는지 확인</li>
+                        <li>파일 경로가 올바른지 확인</li>
                         <li>웹 서버가 정상적으로 실행 중인지 확인</li>
-                        <li>JSP 파일의 문법 오류가 없는지 확인</li>
+                        <li>파일의 문법 오류가 없는지 확인</li>
                     </ul>
-                    <button class="retry-button" onclick="mdiManager.retryLoadJSP('${jspName}')">
+                    <button class="retry-button" onclick="mdiManager.retryLoadContent('${src}')">
                         🔄 다시 시도
                     </button>
                 `;
@@ -455,15 +508,17 @@
                 tabPane.appendChild(errorState);
             }
 
-            retryLoadJSP(jspName) {
-                const tabId = `tab-${jspName}`;
+            retryLoadContent(src) {
+                const tabId = `tab-${src.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+                let title = src;
                 if (this.tabs.has(tabId)) {
+                    title = this.tabs.get(tabId).title;
                     // 기존 탭 닫고 새로 열기
                     this.closeTab(tabId);
-                    setTimeout(() => {
-                        this.openTab(jspName);
-                    }, 100);
                 }
+                setTimeout(() => {
+                    this.openTab(src, title);
+                }, 100);
             }
 
             activateTab(tabId) {
@@ -517,7 +572,7 @@
                     <div class="empty-state">
                         <i>📁</i>
                         <p>좌측 메뉴에서 항목을 선택하세요</p>
-                        <small style="margin-top: 10px; opacity: 0.7;">기존 JSP 파일을 수정하지 않고 그대로 사용할 수 있습니다</small>
+                        <small style="margin-top: 10px; opacity: 0.7;">기존 파일을 수정하지 않고 그대로 사용할 수 있습니다</small>
                     </div>
                 `;
                 this.activeTab = null;
@@ -552,7 +607,7 @@
         // 페이지 로드 완료 후 초기화
         document.addEventListener('DOMContentLoaded', function() {
             console.log('MDI 웹 개발 환경이 준비되었습니다.');
-            console.log('기존 JSP 파일들을 iframe으로 독립적으로 로드합니다.');
+            console.log('콘텐츠를 iframe으로 독립적으로 로드합니다.');
         });
 
         // 키보드 단축키 추가
