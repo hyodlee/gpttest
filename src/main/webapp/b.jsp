@@ -1,3 +1,5 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+
 <%-- b.jsp 파일 예시 --%>
 <div class="jsp-content">
     <h2>B.JSP 페이지</h2>

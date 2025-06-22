@@ -21,7 +21,6 @@ http://localhost:8080/a.jsp
 http://localhost:8080/b.jsp
 
 ```
-
 또한 `MyWorkController`를 통해 다음 주소로도 동일한 JSP를 확인할 수 있습니다.
 
 ```
