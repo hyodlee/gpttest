@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDI 웹 개발 환경</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 60px 1fr 40px;
+            grid-template-columns: 250px 1fr;
+            grid-template-areas: 
+                "header header"
+                "sidebar content"
+                "footer footer";
+        }
+
+        /* 헤더 */
+        .header {
+            grid-area: header;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 300;
+        }
+
+        /* 좌측 메뉴 */
+        .sidebar {
+            grid-area: sidebar;
+            background: #2c3e50;
+            color: white;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            display: block;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid #34495e;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background: #3498db;
+            padding-left: 30px;
+        }
+
+        .menu-item.active {
+            background: #e74c3c;
+            border-left: 4px solid #c0392b;
+        }
+
+        /* 우측 컨텐츠 */
+        .content {
+            grid-area: content;
+            background: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 탭 헤더 */
+        .tab-header {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #ddd;
+            min-height: 45px;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-right: 1px solid #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+        }
+
+        .tab-button.active {
+            background: white;
+            border-bottom: 2px solid #3498db;
+            color: #3498db;
+            font-weight: 600;
+        }
+
+        .tab-close {
+            margin-left: 8px;
+            color: #999;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-close:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* 탭 컨텐츠 */
+        .tab-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+            height: 100%;
+            padding: 0;
+            position: relative;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* iframe 스타일 */
+        .jsp-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* 로딩 표시 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 풋터 */
+        .footer {
+            grid-area: footer;
+            background: #34495e;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 14px;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+            font-size: 18px;
+            background: white;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* 에러 표시 */
+        .error-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #e74c3c;
+            font-size: 16px;
+            background: white;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .error-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+
+        .retry-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+
+        .retry-button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="header">
+        <h1>📂 MDI 웹 개발 환경</h1>
+    </header>
+
+    <!-- 좌측 메뉴 -->
+    <nav class="sidebar">
+        <a href="#" class="menu-item" data-jsp="a">
+            📄 메뉴 A (a.jsp)
+        </a>
+        <a href="#" class="menu-item" data-jsp="b">
+            📊 메뉴 B (b.jsp)
+        </a>
+    </nav>
+
+    <!-- 우측 컨텐츠 -->
+    <main class="content">
+        <div class="tab-header" id="tabHeader">
+            <!-- 탭이 동적으로 추가됩니다 -->
+        </div>
+        <div class="tab-content" id="tabContent">
+            <div class="empty-state">
+                <i>📁</i>
+                <p>좌측 메뉴에서 항목을 선택하세요</p>
+                <small style="margin-top: 10px; opacity: 0.7;">기존 JSP 파일을 수정하지 않고 그대로 사용할 수 있습니다</small>
+            </div>
+        </div>
+    </main>
+
+    <!-- 풋터 -->
+    <footer class="footer">
+        <div>
+            <span class="status-indicator"></span>
+            개발 서버 실행 중 - JSP 파일 독립 실행
+        </div>
+        <div>Eclipse 웹 개발 환경 v2.0</div>
+    </footer>
+
+    <script>
+        // MDI 관리 클래스
+        class MDIManager {
+            constructor() {
+                this.tabs = new Map();
+                this.activeTab = null;
+                this.tabCounter = 0;
+                this.init();
+            }
+
+            init() {
+                // 메뉴 클릭 이벤트 리스너
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const jspName = item.getAttribute('data-jsp');
+                        this.openTab(jspName);
+                        
+                        // 메뉴 활성화 표시
+                        document.querySelectorAll('.menu-item').forEach(menu => menu.classList.remove('active'));
+                        item.classList.add('active');
+                    });
+                });
+            }
+
+            openTab(jspName) {
+                const tabId = `tab-${jspName}`;
+                
+                // 이미 열린 탭이면 활성화만
+                if (this.tabs.has(tabId)) {
+                    this.activateTab(tabId);
+                    return;
+                }
+
+                // 새 탭 생성
+                this.createTab(tabId, jspName);
+                this.activateTab(tabId);
+            }
+
+            createTab(tabId, jspName) {
+                const tabHeader = document.getElementById('tabHeader');
+                const tabContent = document.getElementById('tabContent');
+
+                // 빈 상태 제거
+                const emptyState = tabContent.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                // 탭 버튼 생성
+                const tabButton = document.createElement('button');
+                tabButton.className = 'tab-button';
+                tabButton.setAttribute('data-tab', tabId);
+                tabButton.innerHTML = `
+                    📄 ${jspName}.jsp
+                    <span class="tab-close" data-tab="${tabId}">×</span>
+                `;
+
+                // 탭 컨텐츠 생성 (iframe 사용)
+                const tabPane = document.createElement('div');
+                tabPane.className = 'tab-pane';
+                tabPane.id = tabId;
+                
+                // 로딩 오버레이 추가
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div>
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 15px; color: #666;">JSP 파일을 로드 중...</p>
+                    </div>
+                `;
+
+                // iframe 생성
+                const iframe = document.createElement('iframe');
+                iframe.className = 'jsp-iframe';
+                iframe.src = `${jspName}.jsp`;
+                iframe.setAttribute('data-jsp', jspName);
+                
+                // iframe 로드 이벤트 처리
+                iframe.onload = () => {
+                    // 로딩 오버레이 제거
+                    if (loadingOverlay.parentNode) {
+                        loadingOverlay.remove();
+                    }
+                    console.log(`${jspName}.jsp 로드 완료`);
+                };
+
+                iframe.onerror = () => {
+                    // 에러 상태 표시
+                    this.showErrorState(tabPane, jspName);
+                };
+
+                // 탭 구성
+                tabPane.appendChild(loadingOverlay);
+                tabPane.appendChild(iframe);
+
+                // DOM에 추가
+                tabHeader.appendChild(tabButton);
+                tabContent.appendChild(tabPane);
+
+                // 탭 정보 저장
+                this.tabs.set(tabId, {
+                    button: tabButton,
+                    pane: tabPane,
+                    iframe: iframe,
+                    jspName: jspName
+                });
+
+                // 이벤트 리스너 등록
+                tabButton.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('tab-close')) {
+                        this.activateTab(tabId);
+                    }
+                });
+
+                tabButton.querySelector('.tab-close').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.closeTab(tabId);
+                });
+
+                // 로딩 타임아웃 설정 (10초)
+                setTimeout(() => {
+                    if (loadingOverlay.parentNode) {
+                        this.showErrorState(tabPane, jspName);
+                    }
+                }, 10000);
+            }
+
+            showErrorState(tabPane, jspName) {
+                // 기존 내용 제거
+                tabPane.innerHTML = '';
+                
+                // 에러 상태 표시
+                const errorState = document.createElement('div');
+                errorState.className = 'error-state';
+                errorState.innerHTML = `
+                    <i>⚠️</i>
+                    <h3>${jspName}.jsp 파일을 로드할 수 없습니다</h3>
+                    <p>다음 사항을 확인해주세요:</p>
+                    <ul style="text-align: left; margin: 15px 0;">
+                        <li>JSP 파일이 올바른 경로에 있는지 확인</li>
+                        <li>웹 서버가 정상적으로 실행 중인지 확인</li>
+                        <li>JSP 파일의 문법 오류가 없는지 확인</li>
+                    </ul>
+                    <button class="retry-button" onclick="mdiManager.retryLoadJSP('${jspName}')">
+                        🔄 다시 시도
+                    </button>
+                `;
+                
+                tabPane.appendChild(errorState);
+            }
+
+            retryLoadJSP(jspName) {
+                const tabId = `tab-${jspName}`;
+                if (this.tabs.has(tabId)) {
+                    // 기존 탭 닫고 새로 열기
+                    this.closeTab(tabId);
+                    setTimeout(() => {
+                        this.openTab(jspName);
+                    }, 100);
+                }
+            }
+
+            activateTab(tabId) {
+                // 모든 탭 비활성화
+                this.tabs.forEach((tab, id) => {
+                    tab.button.classList.remove('active');
+                    tab.pane.classList.remove('active');
+                });
+
+                // 선택한 탭 활성화
+                if (this.tabs.has(tabId)) {
+                    const tab = this.tabs.get(tabId);
+                    tab.button.classList.add('active');
+                    tab.pane.classList.add('active');
+                    this.activeTab = tabId;
+                    
+                    // iframe 포커스
+                    if (tab.iframe) {
+                        tab.iframe.focus();
+                    }
+                }
+            }
+
+            closeTab(tabId) {
+                if (this.tabs.has(tabId)) {
+                    const tab = this.tabs.get(tabId);
+                    
+                    // DOM에서 제거
+                    tab.button.remove();
+                    tab.pane.remove();
+                    
+                    // 탭 정보 제거
+                    this.tabs.delete(tabId);
+
+                    // 활성 탭이었다면 다른 탭 활성화
+                    if (this.activeTab === tabId) {
+                        const remainingTabs = Array.from(this.tabs.keys());
+                        if (remainingTabs.length > 0) {
+                            this.activateTab(remainingTabs[remainingTabs.length - 1]);
+                        } else {
+                            // 모든 탭이 닫혔으면 빈 상태 표시
+                            this.showEmptyState();
+                        }
+                    }
+                }
+            }
+
+            showEmptyState() {
+                const tabContent = document.getElementById('tabContent');
+                tabContent.innerHTML = `
+                    <div class="empty-state">
+                        <i>📁</i>
+                        <p>좌측 메뉴에서 항목을 선택하세요</p>
+                        <small style="margin-top: 10px; opacity: 0.7;">기존 JSP 파일을 수정하지 않고 그대로 사용할 수 있습니다</small>
+                    </div>
+                `;
+                this.activeTab = null;
+                
+                // 메뉴 활성화 해제
+                document.querySelectorAll('.menu-item').forEach(menu => menu.classList.remove('active'));
+            }
+
+            // 전체 화면 새로고침
+            refreshAllTabs() {
+                this.tabs.forEach((tab, tabId) => {
+                    if (tab.iframe) {
+                        tab.iframe.src = tab.iframe.src;
+                    }
+                });
+            }
+
+            // 현재 활성 탭 새로고침
+            refreshActiveTab() {
+                if (this.activeTab && this.tabs.has(this.activeTab)) {
+                    const tab = this.tabs.get(this.activeTab);
+                    if (tab.iframe) {
+                        tab.iframe.src = tab.iframe.src;
+                    }
+                }
+            }
+        }
+
+        // MDI 매니저 인스턴스 생성
+        const mdiManager = new MDIManager();
+        
+        // 페이지 로드 완료 후 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('MDI 웹 개발 환경이 준비되었습니다.');
+            console.log('기존 JSP 파일들을 iframe으로 독립적으로 로드합니다.');
+        });
+
+        // 키보드 단축키 추가
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+R 또는 F5: 현재 탭 새로고침
+            if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+                e.preventDefault();
+                mdiManager.refreshActiveTab();
+            }
+            
+            // Ctrl+Shift+R: 모든 탭 새로고침
+            if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+                e.preventDefault();
+                mdiManager.refreshAllTabs();
+            }
+            
+            // Ctrl+W: 현재 탭 닫기
+            if (e.ctrlKey && e.key === 'w') {
+                e.preventDefault();
+                if (mdiManager.activeTab) {
+                    mdiManager.closeTab(mdiManager.activeTab);
+                }
+            }
+        });
+
+        // 개발자용 함수들을 전역으로 노출
+        window.mdiManager = mdiManager;
+    </script>
+</body>
+</html>
